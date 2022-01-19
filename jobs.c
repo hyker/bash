@@ -5302,6 +5302,7 @@ static int children_routine_simple_internal(struct nofork_child_args *recv_args,
       #if defined (DEBUG)
         itrace("file not found");
       #endif
+      sys_error ("command not found: %s\n", cmd);
       goto error_out;
   };
 
