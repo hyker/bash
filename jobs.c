@@ -5375,9 +5375,11 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
     int pipe_out = recv_args->pipe_out;
 
     // Strip the subshell "()" symbol
-    int cmd_len = strlen(command) - 2;
-    command[cmd_len] = 0;
-    command = &command[2];
+    if (command[0] == '(' && command[strlen(command) - 1] == ')') {
+        int cmd_len = strlen(command) - 2;
+        command[cmd_len] = 0;
+        command = &command[2];
+    }
     #if defined (DEBUG)
       itrace("child_thread [%ld] for subshell will execute: %s",
             syscall(SYS_gettid),
@@ -5386,6 +5388,40 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
 
     int ret = 0;
     pid_t mypid;
+    posix_spawn_file_actions_t file_action;
+    ret = posix_spawn_file_actions_init(&file_action);
+    if (ret != 0) {
+        sys_error("posix_spawn_file_actions_init failed: %d\n", errno);
+        return -1;
+    }
+
+    if (pipe_in != NO_PIPE) {
+        ret = posix_spawn_file_actions_adddup2(&file_action, pipe_in, 0);
+        if (ret != 0) {
+            sys_error("posix_spawn_file_actions_adddup2 failed: %d\n", errno);
+            return -1;
+        }
+
+        ret = posix_spawn_file_actions_addclose(&file_action, pipe_in);
+        if (ret != 0) {
+            sys_error("posix_spawn_file_actions_addclose failed: %d\n", errno);
+            return -1;
+        }
+    }
+
+    if (pipe_out != NO_PIPE) {
+        ret = posix_spawn_file_actions_adddup2(&file_action, pipe_out, 0);
+        if (ret != 0) {
+            sys_error("posix_spawn_file_actions_adddup2 failed: %d\n", errno);
+            return -1;
+        }
+
+        ret = posix_spawn_file_actions_addclose(&file_action, pipe_out);
+        if (ret != 0) {
+            sys_error("posix_spawn_file_actions_addclose failed: %d\n", errno);
+            return -1;
+        }
+    }
 
     // Generate a tmp file name which must be under the same diretory with the actual script file
     char subshell_script[PATH_MAX] = {0};
@@ -5408,7 +5444,7 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
     // export all local variables to new spawned bash process
     char **current_env = make_env_array_from_var_list(all_visible_variables());
     char *argv[] = {"bash", subshell_script, NULL};
-    ret = posix_spawn(&mypid, bash_bin, NULL, NULL, argv,
+    ret = posix_spawn(&mypid, bash_bin, &file_action, NULL, argv,
                       current_env);
     if (ret != 0) {
         sys_error("posix_spawn error code = %d\n", errno);
@@ -5422,6 +5458,7 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
 
     close(tmp_script_fd); // auto release flock
     unlink(subshell_script);
+    posix_spawn_file_actions_destroy(&file_action);
     return mypid;
 }
 
