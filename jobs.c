@@ -5410,7 +5410,7 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
     }
 
     if (pipe_out != NO_PIPE) {
-        ret = posix_spawn_file_actions_adddup2(&file_action, pipe_out, 0);
+        ret = posix_spawn_file_actions_adddup2(&file_action, pipe_out, 1);
         if (ret != 0) {
             sys_error("posix_spawn_file_actions_adddup2 failed: %d\n", errno);
             return -1;
