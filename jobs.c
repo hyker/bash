@@ -5375,10 +5375,13 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
     int pipe_out = recv_args->pipe_out;
 
     // Strip the subshell "()" symbol
-    if (command[0] == '(' && command[strlen(command) - 1] == ')') {
-        int cmd_len = strlen(command) - 2;
-        command[cmd_len] = 0;
-        command = &command[2];
+    if (command[0] == '(') {
+        command[0] = ' ';
+        int last_parenthesis_index = strlen(command) - 1;
+        while (command[last_parenthesis_index] != ')' && last_parenthesis_index > 0) {
+          --last_parenthesis_index;
+        }
+        command[last_parenthesis_index] = ' ';
     }
     #if defined (DEBUG)
       itrace("child_thread [%ld] for subshell will execute: %s",
