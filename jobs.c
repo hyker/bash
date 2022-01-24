@@ -5377,9 +5377,12 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
     // Strip the subshell "()" symbol
     if (command[0] == '(') {
         command[0] = ' ';
-        int last_parenthesis_index = strlen(command) - 1;
-        while (command[last_parenthesis_index] != ')' && last_parenthesis_index > 0) {
-          --last_parenthesis_index;
+        int last_parenthesis_index = 1;
+        int i = 1;
+        while (i > 0 && last_parenthesis_index < strlen(command)) {
+            if (command[last_parenthesis_index] == '(') ++i;
+            else if (command[last_parenthesis_index] == ')') --i;
+            else ++last_parenthesis_index;
         }
         command[last_parenthesis_index] = ' ';
     }
