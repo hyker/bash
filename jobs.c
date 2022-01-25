@@ -5155,11 +5155,6 @@ static int set_child_process_file_actions(posix_spawn_file_actions_t *file_actio
         REDIRECT *redirected, int pipe_in, int pipe_out) {
     int ret = 0;
     if (redirected) {
-        /* Expand the redirect filename first. Otherwise the commands
-        'cat /etc/hosts >> $TMP/alltests' may not correctly parse the $TMP.*/
-        char *expand_fn = redirection_expand(redirected->redirectee.filename);
-        redirected->redirectee.filename = make_bare_word(expand_fn);
-
         if (0 <= redirected->redirectee.dest && redirected->redirectee.dest < 4) {
             // echo xxx 2>&1 (dup2(1, 2) redirects stderror to stdout)
             ret = posix_spawn_file_actions_adddup2(file_action, redirected->redirectee.dest,
@@ -5169,6 +5164,11 @@ static int set_child_process_file_actions(posix_spawn_file_actions_t *file_actio
               return ret;
             }
             if (redirected->next != NULL) {
+		/* Expand the redirect filename first. Otherwise the commands
+		'cat /etc/hosts >> $TMP/alltests' may not correctly parse the $TMP.*/
+		char *expand_fn = redirection_expand(redirected->redirectee.filename);
+		redirected->redirectee.filename = make_bare_word(expand_fn);
+
                 // echo xxx 2>&1 > a.log
                 ret = posix_spawn_file_actions_addopen(file_action,
                                                        (size_t)redirected->redirectee.filename,
@@ -5187,6 +5187,11 @@ static int set_child_process_file_actions(posix_spawn_file_actions_t *file_actio
               return ret;
             }
             if (redirected->next != NULL) {
+		/* Expand the redirect filename first. Otherwise the commands
+		'cat /etc/hosts >> $TMP/alltests' may not correctly parse the $TMP.*/
+		char *expand_fn = redirection_expand(redirected->redirectee.filename);
+		redirected->redirectee.filename = make_bare_word(expand_fn);
+
                 // echo xxx > a.log 2>&1
                 assert(redirected->next->redirectee.dest < 4);
                 ret = posix_spawn_file_actions_adddup2(file_action, redirected->next->redirectee.dest,
@@ -5376,15 +5381,20 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
 
     // Strip the subshell "()" symbol
     if (command[0] == '(') {
-        command[0] = ' ';
-        int last_parenthesis_index = 1;
-        int i = 1;
+        int first_parenthesis_index = 0;
+	while (first_parenthesis_index < strlen(command)) {
+            if (command[first_parenthesis_index] == '(') break;
+	    first_parenthesis_index++;
+	}
+        int last_parenthesis_index = first_parenthesis_index + 1;
+        int depth = 1;
 	while (last_parenthesis_index < strlen(command)) {
-            if (command[last_parenthesis_index] == '(') ++i;
-            else if (command[last_parenthesis_index] == ')') --i;
-            if (i == 0) break;
+            if (command[last_parenthesis_index] == '(') ++depth;
+            else if (command[last_parenthesis_index] == ')') --depth;
+            if (depth == 0) break;
             ++last_parenthesis_index;
         }
+        command[first_parenthesis_index] = ' ';
         command[last_parenthesis_index] = ' ';
     }
     #if defined (DEBUG)
