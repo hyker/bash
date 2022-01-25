@@ -5179,6 +5179,11 @@ static int set_child_process_file_actions(posix_spawn_file_actions_t *file_actio
                 }
             }
         } else {
+	    /* Expand the redirect filename first. Otherwise the commands
+	    'cat /etc/hosts >> $TMP/alltests' may not correctly parse the $TMP.*/
+	    char *expand_fn = redirection_expand(redirected->redirectee.filename);
+	    redirected->redirectee.filename = make_bare_word(expand_fn);
+
             // echo xxx > a.log
             ret = posix_spawn_file_actions_addopen(file_action, 1,
                                                    redirected->redirectee.filename->word, redirected->flags, 0666);
@@ -5187,11 +5192,6 @@ static int set_child_process_file_actions(posix_spawn_file_actions_t *file_actio
               return ret;
             }
             if (redirected->next != NULL) {
-		/* Expand the redirect filename first. Otherwise the commands
-		'cat /etc/hosts >> $TMP/alltests' may not correctly parse the $TMP.*/
-		char *expand_fn = redirection_expand(redirected->redirectee.filename);
-		redirected->redirectee.filename = make_bare_word(expand_fn);
-
                 // echo xxx > a.log 2>&1
                 assert(redirected->next->redirectee.dest < 4);
                 ret = posix_spawn_file_actions_adddup2(file_action, redirected->next->redirectee.dest,
