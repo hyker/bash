@@ -5374,27 +5374,30 @@ int children_routine_for_pipe_cmd (struct nofork_child_args *recv_args) {
   return children_routine_simple_internal(recv_args, cmd_list);
 }
 
-static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
+static int children_routine_for_subshell (struct nofork_child_args *recv_args, int is_control_structure) {
     char *command = recv_args->command_str;
     int pipe_in = recv_args->pipe_in;
     int pipe_out = recv_args->pipe_out;
 
     // Strip the subshell "()" symbol
-    int first_parenthesis_index = 0;
-    while (first_parenthesis_index < strlen(command)) {
-        if (command[first_parenthesis_index] == '(') break;
-        first_parenthesis_index++;
-    }
-    int last_parenthesis_index = first_parenthesis_index + 1;
-    int depth = 1;
-    while (last_parenthesis_index < strlen(command)) {
+    if (!is_control_structure) {
+      int first_parenthesis_index = 0;
+      while (first_parenthesis_index < strlen(command)) {
+          if (command[first_parenthesis_index] == '(') break;
+          first_parenthesis_index++;
+      }
+      int last_parenthesis_index = first_parenthesis_index + 1;
+      int depth = 1;
+      while (last_parenthesis_index < strlen(command)) {
         if (command[last_parenthesis_index] == '(') ++depth;
         else if (command[last_parenthesis_index] == ')') --depth;
         if (depth == 0) break;
         ++last_parenthesis_index;
+      }
+      command[first_parenthesis_index] = ' ';
+      command[last_parenthesis_index] = ' ';
     }
-    command[first_parenthesis_index] = ' ';
-    command[last_parenthesis_index] = ' ';
+    
     #if defined (DEBUG)
       itrace("child_thread [%ld] for subshell will execute: %s",
             syscall(SYS_gettid),
@@ -5721,9 +5724,9 @@ SIMPLE_COM *cmd_list_simple;
       arg->cmd_list = (void *)cmd_list_simple;
       child_pid = children_routine_for_pipe_cmd(arg);
     } else if (strcmp(operation, "subshell") == 0) {
-      child_pid = children_routine_for_subshell(arg);
+      child_pid = children_routine_for_subshell(arg, 0);
     } else if (strcmp(operation, "subshell_control_structure") == 0) {
-      child_pid = children_routine_for_subshell(arg);
+      child_pid = children_routine_for_subshell(arg, 1);
     } else if (strcmp(operation, "process_subst") == 0) {
       arg->open_for_read_in_child = open_for_read_in_child;
       child_pid = children_routine_for_process_subst(arg);
