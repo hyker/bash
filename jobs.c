@@ -5722,6 +5722,8 @@ SIMPLE_COM *cmd_list_simple;
       child_pid = children_routine_for_pipe_cmd(arg);
     } else if (strcmp(operation, "subshell") == 0) {
       child_pid = children_routine_for_subshell(arg);
+    } else if (strcmp(operation, "subshell_control_structure") == 0) {
+      child_pid = children_routine_for_subshell(arg);
     } else if (strcmp(operation, "process_subst") == 0) {
       arg->open_for_read_in_child = open_for_read_in_child;
       child_pid = children_routine_for_process_subst(arg);

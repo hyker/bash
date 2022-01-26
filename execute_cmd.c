@@ -636,8 +636,14 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
       fork_flags = asynchronous ? FORK_ASYNC : 0;
       p = savestring (tcmd);
       paren_pid = getpid();
-      pid_t child_pid = make_child_without_fork("subshell", p, fork_flags, pipe_in,
+      if ((shell_control_structure (command->type)) {
+        pid_t child_pid = make_child_without_fork("subshell_control_structure", p, fork_flags, pipe_in,
                                 pipe_out, 0, NULL);
+      } else {
+        pid_t child_pid = make_child_without_fork("subshell", p, fork_flags, pipe_in,
+                                pipe_out, 0, NULL);
+      }
+      
 
       if (user_subshell && signal_is_trapped (ERROR_TRAP) && 
 	  signal_in_progress (DEBUG_TRAP) == 0 && running_trap == 0)
