@@ -5380,23 +5380,21 @@ static int children_routine_for_subshell (struct nofork_child_args *recv_args) {
     int pipe_out = recv_args->pipe_out;
 
     // Strip the subshell "()" symbol
-    if (command[0] == '(') {
-        int first_parenthesis_index = 0;
-	while (first_parenthesis_index < strlen(command)) {
-            if (command[first_parenthesis_index] == '(') break;
-	    first_parenthesis_index++;
-	}
-        int last_parenthesis_index = first_parenthesis_index + 1;
-        int depth = 1;
-	while (last_parenthesis_index < strlen(command)) {
-            if (command[last_parenthesis_index] == '(') ++depth;
-            else if (command[last_parenthesis_index] == ')') --depth;
-            if (depth == 0) break;
-            ++last_parenthesis_index;
-        }
-        command[first_parenthesis_index] = ' ';
-        command[last_parenthesis_index] = ' ';
+    int first_parenthesis_index = 0;
+    while (first_parenthesis_index < strlen(command)) {
+        if (command[first_parenthesis_index] == '(') break;
+        first_parenthesis_index++;
     }
+    int last_parenthesis_index = first_parenthesis_index + 1;
+    int depth = 1;
+    while (last_parenthesis_index < strlen(command)) {
+        if (command[last_parenthesis_index] == '(') ++depth;
+        else if (command[last_parenthesis_index] == ')') --depth;
+        if (depth == 0) break;
+        ++last_parenthesis_index;
+    }
+    command[first_parenthesis_index] = ' ';
+    command[last_parenthesis_index] = ' ';
     #if defined (DEBUG)
       itrace("child_thread [%ld] for subshell will execute: %s",
             syscall(SYS_gettid),
