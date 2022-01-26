@@ -636,7 +636,7 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
       fork_flags = asynchronous ? FORK_ASYNC : 0;
       p = savestring (tcmd);
       paren_pid = getpid();
-      if ((shell_control_structure (command->type)) {
+      if (shell_control_structure (command->type)) {
         pid_t child_pid = make_child_without_fork("subshell_control_structure", p, fork_flags, pipe_in,
                                 pipe_out, 0, NULL);
       } else {
